@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — M&E Partner Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .admin-wrap { max-width: 760px; margin: 0 auto; padding: 32px 20px 80px; }
+  .card { background: white; border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; margin-bottom: 24px; }
+  .card h2 { font-family: var(--font-display); font-size: 17px; margin: 0 0 4px; }
+  .card p.hint { font-size: 13px; color: var(--ink-soft); margin: 0 0 18px; }
+  label.field { display: block; font-size: 13px; font-weight: 500; margin: 14px 0 6px; }
+  input[type="text"], input[type="url"], textarea, select {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px;
+    font-size: 14px; font-family: var(--font-body);
+  }
+  textarea { resize: vertical; min-height: 60px; }
+  .icon-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+  .icon-choice { width: 42px; height: 42px; border-radius: 8px; border: 2px solid var(--line);
+    display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--teal); }
+  .icon-choice svg { width: 20px; height: 20px; }
+  .icon-choice.selected { border-color: var(--coral); background: #fdece5; }
+  .tag-editor { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+  .tag-editor .stamp-tag { cursor: pointer; }
+  .tag-editor .stamp-tag.selected { background: var(--teal); color: white; border-style: solid; }
+  .add-value-row { display: flex; gap: 8px; margin-top: 8px; }
+  .add-value-row input { flex: 1; }
+  .add-value-row button { white-space: nowrap; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--sand); cursor: pointer; font-size: 13px; }
+  .status-msg { font-size: 13px; margin-top: 12px; min-height: 16px; }
+  .status-msg.error { color: var(--coral-dark); }
+  .status-msg.success { color: var(--teal-deep); }
+  .existing-list { display: flex; flex-direction: column; gap: 10px; }
+  .existing-row { display: flex; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .existing-row .tile-icon { width: 32px; height: 32px; flex-shrink: 0; }
+  .existing-row .info { flex: 1; min-width: 0; }
+  .existing-row .info strong { font-size: 14px; display: block; }
+  .existing-row .info span { font-size: 12px; color: var(--ink-soft); }
+  .existing-row button { border: none; background: none; cursor: pointer; font-family: var(--font-mono); font-size: 12px; }
+  .existing-row .edit-btn { color: var(--teal-deep); }
+  .existing-row .delete-btn { color: var(--coral-dark); }
+</style>
+</head>
+<body>
+
+<div id="adminGate" class="gate-overlay">
+  <div class="gate-box">
+    <div class="brand-mark">COTE</div>
+    <h2>Admin Access</h2>
+    <p>Enter the admin password to add or edit resources.</p>
+    <input type="password" id="adminPassword" placeholder="Admin password" autocomplete="off">
+    <button onclick="submitAdminPassword()">Unlock</button>
+    <div class="gate-error" id="adminError"></div>
+  </div>
+</div>
+
+<header class="site-header">
+  <div class="brand">
+    <div class="brand-mark">COTE</div>
+    <div class="brand-text">
+      <h1>Admin: Resources</h1>
+      <p>Add and manage M&E forms &amp; tools for the partner portal</p>
+    </div>
+  </div>
+  <div class="header-links">
+    <a href="index.html">View Portal</a>
+  </div>
+</header>
+
+<div class="admin-wrap hidden" id="adminContent">
+
+  <div class="card">
+    <h2 id="formTitle">Add a resource</h2>
+    <p class="hint">This is written directly into the site's GitHub repo, so it will appear on the portal shortly after saving (usually under a minute).</p>
+
+    <form id="resourceForm" onsubmit="return false;">
+      <input type="hidden" id="editingId" value="">
+
+      <label class="field">Title</label>
+      <input type="text" id="fTitle" placeholder="e.g. Baseline Household Survey" required>
+
+      <label class="field">Short description (1–2 lines)</label>
+      <textarea id="fDescription" maxlength="160" placeholder="What this form/tool is for"></textarea>
+
+      <label class="field">Link</label>
+      <input type="url" id="fLink" placeholder="https://..." required>
+
+      <label class="field">Icon</label>
+      <div class="icon-grid" id="iconGrid"></div>
+
+      <label class="field">Or use a custom image (optional)</label>
+      <input type="text" id="fImage" placeholder="assets/logos/your-image.png (add the file to the repo yourself)">
+
+      <label class="field">Location</label>
+      <div class="tag-editor" id="tagLocation"></div>
+      <div class="add-value-row">
+        <input type="text" id="newLocation" placeholder="Add new location">
+        <button type="button" onclick="addNewValue('location', 'newLocation')">Add</button>
+      </div>
+
+      <label class="field">Project / SDG</label>
+      <div class="tag-editor" id="tagProjectArea"></div>
+      <div class="add-value-row">
+        <input type="text" id="newProjectArea" placeholder="Add new project/SDG area">
+        <button type="button" onclick="addNewValue('projectArea', 'newProjectArea')">Add</button>
+      </div>
+
+      <label class="field">Impact Area Framework</label>
+      <div class="tag-editor" id="tagImpactFramework"></div>
+      <div class="add-value-row">
+        <input type="text" id="newImpactFramework" placeholder="Add new impact area">
+        <button type="button" onclick="addNewValue('impactFramework', 'newImpactFramework')">Add</button>
+      </div>
+
+      <label class="field">Year</label>
+      <div class="tag-editor" id="tagYear"></div>
+      <div class="add-value-row">
+        <input type="text" id="newYear" placeholder="e.g. 2027">
+        <button type="button" onclick="addNewValue('year', 'newYear')">Add</button>
+      </div>
+
+      <label class="field">Admin password (confirm to save)</label>
+      <input type="text" id="fPasswordConfirm" placeholder="Re-enter admin password">
+
+      <div style="margin-top:20px; display:flex; gap:10px;">
+        <button class="btn-primary" style="width:auto; padding:11px 22px;" onclick="saveResource()">Save resource</button>
+        <button type="button" onclick="resetForm()" style="width:auto; padding:11px 22px; border-radius:8px; border:1px solid var(--line); background:white; cursor:pointer; font-family:var(--font-display); font-weight:600;">Clear form</button>
+      </div>
+      <div class="status-msg" id="saveStatus"></div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Existing resources</h2>
+    <p class="hint">Click edit to load a resource into the form above, or delete to remove it.</p>
+    <div class="existing-list" id="existingList"></div>
+  </div>
+
+</div>
+
+<script src="js/icons.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>

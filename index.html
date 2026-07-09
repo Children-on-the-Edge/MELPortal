@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M&E Partner Portal — Children on the Edge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- Viewer gate: shown only if the site has a viewer password configured -->
+<div id="viewerGate" class="gate-overlay hidden">
+  <div class="gate-box">
+    <div class="brand-mark">COTE</div>
+    <h2>Partner Portal Access</h2>
+    <p>Enter the partner password shared with your organisation.</p>
+    <input type="password" id="viewerPassword" placeholder="Password" autocomplete="off">
+    <button onclick="submitViewerPassword()">Enter Portal</button>
+    <div class="gate-error" id="viewerError"></div>
+  </div>
+</div>
+
+<header class="site-header">
+  <div class="brand">
+    <div class="brand-mark">COTE</div>
+    <div class="brand-text">
+      <h1>M&E Partner Portal</h1>
+      <p>Forms, tools &amp; resources for monitoring and evaluation</p>
+    </div>
+  </div>
+  <div class="header-links">
+    <a href="admin.html">Admin: Add / Edit Resources</a>
+  </div>
+</header>
+
+<div class="filter-bar" id="filterBar">
+  <span class="filter-label">Filter by</span>
+  <!-- Dropdowns injected by app.js -->
+</div>
+
+<section class="tile-section">
+  <h2 id="resultsCount">All resources</h2>
+  <div class="tile-grid" id="tileGrid"></div>
+  <div class="empty-state hidden" id="emptyState">
+    <h3>No resources match those filters</h3>
+    <p>Try clearing a filter or two.</p>
+  </div>
+</section>
+
+<script src="js/icons.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
