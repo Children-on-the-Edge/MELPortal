@@ -5,10 +5,19 @@
     "description": "Core survey used at the start of a project to capture household demographics and needs.",
     "link": "https://forms.gle/example-baseline-survey",
     "icon": "clipboard",
-    "location": ["Uganda", "Bangladesh"],
-    "projectArea": ["Education"],
-    "impactFramework": ["Child Protection"],
-    "year": ["2026"]
+    "location": [
+      "Uganda",
+      "Bangladesh"
+    ],
+    "projectArea": [
+      "Education"
+    ],
+    "impactFramework": [
+      "Child Protection"
+    ],
+    "year": [
+      "2026"
+    ]
   },
   {
     "id": "r002",
@@ -16,10 +25,18 @@
     "description": "Spreadsheet template for recording student attendance each term.",
     "link": "https://forms.gle/example-attendance-tracker",
     "icon": "checklist",
-    "location": ["Myanmar"],
-    "projectArea": ["Education"],
-    "impactFramework": ["Learning Outcomes"],
-    "year": ["2026"]
+    "location": [
+      "Myanmar"
+    ],
+    "projectArea": [
+      "Education"
+    ],
+    "impactFramework": [
+      "Learning Outcomes"
+    ],
+    "year": [
+      "2026"
+    ]
   },
   {
     "id": "r003",
@@ -27,9 +44,19 @@
     "description": "Short form for gathering feedback from parents and community members.",
     "link": "https://forms.gle/example-feedback-form",
     "icon": "megaphone",
-    "location": ["Uganda", "Afghanistan"],
-    "projectArea": ["Community Engagement"],
-    "impactFramework": ["Safeguarding"],
-    "year": ["2025", "2026"]
+    "location": [
+      "Uganda",
+      "Afghanistan"
+    ],
+    "projectArea": [
+      "Community Engagement"
+    ],
+    "impactFramework": [
+      "Safeguarding"
+    ],
+    "year": [
+      "2025",
+      "2026"
+    ]
   }
 ]
