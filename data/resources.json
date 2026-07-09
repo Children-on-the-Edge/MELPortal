@@ -78,5 +78,24 @@
     "year": [
       "2026"
     ]
+  },
+  {
+    "id": "rmrdkwyc4",
+    "title": "Karamoja: Assessing child development and environmental provision and practice",
+    "description": "PPAT Assessment",
+    "link": "https://children-on-the-edge.github.io/AssesssmentForPlayBased/?setup=eyJ2YWx1ZXMiOnsiU2V0dGluZyI6WyJLaW1iaWxpeW8iLCJTYWxhYW1hIiwiVW5pdHkiLCJVbmlvbiAxIiwiVW5pb24gMiIsIkxpdHRsZSBTdGFycyAxIiwiTGl0dGxlIFN0YXJzIDIiLCJNb3VudGFpbiJdLCJab25lIjpbIkJ1bGl0aSIsIkJ1a2VyZSIsIkl0YW1iYWJpbmlnYSIsIkthYm9uaSIsIkJ1anVibGkiXSwiRmFjaWxpdGF0b3IiOlsiTWFzaWthIFNpbHdhbXVnaHVtYSBCZXJuYWRldHRlIiwiUmVoZW1hIE5pc2hpbXdlIiwiTXVnZW55aSBDZWNpbGxlIiwiQXNpZml3ZSBBcmFuZGEiLCJTZWhpbmRhIENvbnNvbGUiLCJBaW5lYnlvbmEgQXBvcGhpYSIsIkFrYW5rdW5kYSBDbGFpcmUiLCJNdXNlbWV6YSBQYXRyaWNrIl0sIkFzc2Vzc29yIjpbIkx1Y2llbiBOaXlvZ3VzYSBCaXNvbmdhIiwiQ2hyaXN0aWFuIEFmcmljYSBOaXlvc2FiYSIsIlJpY2hhcmQgTXV0YWJhemkiLCJIYWJlcnQgRWxpeWEiLCJLYXRvIEdvZHdpbiIsIk1ldGhvZGl1cyBGcmFuayBVa3dpc2hha2EiLCJBbGlraWJhIE11c3RhZmEiXX0sInN5bmMiOnsiY2xpZW50SWQiOiIxMjYwNzk5MDM0MTYtdDlhdXY5cWw3OWp0Z2N0ZmN1dDg4bWc1dG50YmI2ZDQuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzaGVldElkIjoiMUVHRDhhUlFycXRqRVlBLXBRT2NMbEptMGwtS2dHbElvVG8yekI5YlUwdG8ifSwiYXV0aCI6eyJ1c2VybmFtZSI6ImFkbWluIiwicGFzc3dvcmRIYXNoIjoiYjFkMThkZTAyZDk4MWRjMDZlN2NjZGE5NDJlMmE0YzFlMzEzNGM1ZDUxYTcyNTRiMDQwYmE1OTkyNjczYmUxOSJ9fQ%3D%3D",
+    "icon": "chart",
+    "location": [
+      "Uganda"
+    ],
+    "projectArea": [
+      "Education"
+    ],
+    "impactFramework": [
+      "Learning Outcomes"
+    ],
+    "year": [
+      "2026"
+    ]
   }
 ]
