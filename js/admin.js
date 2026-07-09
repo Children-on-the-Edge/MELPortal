@@ -1,377 +1,218 @@
-:root {
-  /* Color tokens */
-  --teal-deep: #0b4f52;
-  --teal: #0f6e71;
-  --teal-bright: #14a3a0;
-  --coral: #f2643a;
-  --coral-dark: #d94f28;
-  --sand: #fbf6ee;
-  --sand-card: #ffffff;
-  --ink: #16292a;
-  --ink-soft: #4c6264;
-  --line: #dfe6e2;
+let ALL_RESOURCES = [];
+const CATEGORY_KEYS = ['location', 'projectArea', 'impactFramework', 'year'];
+const KNOWN_VALUES = { location: new Set(), projectArea: new Set(), impactFramework: new Set(), year: new Set() };
+const SELECTED = { location: new Set(), projectArea: new Set(), impactFramework: new Set(), year: new Set() };
+let selectedIcon = 'form';
+let adminPasswordCache = '';
 
-  /* Type tokens */
-  --font-display: 'Poppins', sans-serif;
-  --font-body: 'Inter', sans-serif;
-  --font-mono: 'IBM Plex Mono', monospace;
+// ---------- Admin gate ----------
 
-  --radius: 14px;
+async function submitAdminPassword() {
+  const password = document.getElementById('adminPassword').value;
+  const errorEl = document.getElementById('adminError');
+  errorEl.textContent = '';
+  try {
+    const res = await fetch('/.netlify/functions/verify-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role: 'admin', password }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      adminPasswordCache = password;
+      document.getElementById('fPasswordConfirm').value = password;
+      document.getElementById('adminGate').classList.add('hidden');
+      document.getElementById('adminContent').classList.remove('hidden');
+      loadResources();
+    } else {
+      errorEl.textContent = 'Incorrect password. Please try again.';
+    }
+  } catch (e) {
+    errorEl.textContent = 'Could not verify password right now. Please try again shortly.';
+  }
 }
 
-* { box-sizing: border-box; }
+// ---------- Load + render existing resources ----------
 
-body {
-  margin: 0;
-  background: var(--sand);
-  color: var(--ink);
-  font-family: var(--font-body);
-  -webkit-font-smoothing: antialiased;
+async function loadResources() {
+  const res = await fetch('data/resources.json?t=' + Date.now());
+  ALL_RESOURCES = await res.json();
+  CATEGORY_KEYS.forEach(k => {
+    KNOWN_VALUES[k] = new Set(ALL_RESOURCES.flatMap(r => r[k] || []));
+  });
+  renderIconGrid();
+  renderTagEditors();
+  renderExistingList();
 }
 
-a { color: inherit; }
-
-/* ---------- Header ---------- */
-
-.site-header {
-  background: var(--teal-deep);
-  color: white;
-  padding: 22px 28px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
+function renderIconGrid() {
+  const grid = document.getElementById('iconGrid');
+  grid.innerHTML = ICON_KEYS.map(key => `
+    <div class="icon-choice ${key === selectedIcon ? 'selected' : ''}" data-key="${key}" onclick="selectIcon('${key}')">
+      ${iconSVG(key)}
+    </div>
+  `).join('');
 }
 
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+function selectIcon(key) {
+  selectedIcon = key;
+  document.querySelectorAll('.icon-choice').forEach(el => {
+    el.classList.toggle('selected', el.dataset.key === key);
+  });
 }
 
-.brand-mark {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background: var(--coral);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 18px;
-  color: white;
-  flex-shrink: 0;
+function renderTagEditors() {
+  CATEGORY_KEYS.forEach(key => {
+    const container = document.getElementById('tag' + capitalize(key));
+    const values = Array.from(KNOWN_VALUES[key]).sort();
+    container.innerHTML = values.map(v => `
+      <span class="stamp-tag ${SELECTED[key].has(v) ? 'selected' : ''}" data-value="${v}" onclick="toggleTag('${key}', '${v}')">${v}</span>
+    `).join('') || '<span style="font-size:12.5px;color:var(--ink-soft);">No options yet — add one below</span>';
+  });
 }
 
-.brand-text h1 {
-  font-family: var(--font-display);
-  font-size: 20px;
-  margin: 0;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+function toggleTag(key, value) {
+  if (SELECTED[key].has(value)) SELECTED[key].delete(value);
+  else SELECTED[key].add(value);
+  renderTagEditors();
 }
 
-.brand-text p {
-  margin: 2px 0 0;
-  font-size: 13px;
-  color: #cfe8e6;
+function addNewValue(key, inputId) {
+  const input = document.getElementById(inputId);
+  const value = input.value.trim();
+  if (!value) return;
+  KNOWN_VALUES[key].add(value);
+  SELECTED[key].add(value);
+  input.value = '';
+  renderTagEditors();
 }
 
-.header-links a {
-  font-family: var(--font-mono);
-  font-size: 12.5px;
-  text-decoration: none;
-  color: #cfe8e6;
-  border: 1px solid rgba(255,255,255,0.35);
-  border-radius: 20px;
-  padding: 7px 14px;
-  transition: background 0.15s ease, color 0.15s ease;
+function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+function renderExistingList() {
+  const list = document.getElementById('existingList');
+  if (ALL_RESOURCES.length === 0) {
+    list.innerHTML = '<p style="font-size:13px;color:var(--ink-soft);">No resources added yet.</p>';
+    return;
+  }
+  list.innerHTML = ALL_RESOURCES.map(r => `
+    <div class="existing-row">
+      <div class="tile-icon">${r.image ? `<img src="${r.image}" alt="">` : iconSVG(r.icon)}</div>
+      <div class="info">
+        <strong>${r.title}</strong>
+        <span>${(r.location || []).join(', ') || 'No location set'}</span>
+      </div>
+      <button class="edit-btn" onclick="loadForEdit('${r.id}')">Edit</button>
+      <button class="delete-btn" onclick="deleteResource('${r.id}')">Delete</button>
+    </div>
+  `).join('');
 }
 
-.header-links a:hover {
-  background: rgba(255,255,255,0.12);
-  color: white;
+function loadForEdit(id) {
+  const r = ALL_RESOURCES.find(x => x.id === id);
+  if (!r) return;
+  document.getElementById('formTitle').textContent = 'Edit resource';
+  document.getElementById('editingId').value = r.id;
+  document.getElementById('fTitle').value = r.title || '';
+  document.getElementById('fDescription').value = r.description || '';
+  document.getElementById('fLink').value = r.link || '';
+  document.getElementById('fImage').value = r.image || '';
+  selectedIcon = r.icon || 'form';
+  CATEGORY_KEYS.forEach(k => {
+    SELECTED[k] = new Set(r[k] || []);
+  });
+  renderIconGrid();
+  renderTagEditors();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-/* ---------- Filter bar ---------- */
-
-.filter-bar {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  background: var(--sand);
-  border-bottom: 1px solid var(--line);
-  padding: 16px 28px;
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  align-items: center;
+function resetForm() {
+  document.getElementById('formTitle').textContent = 'Add a resource';
+  document.getElementById('editingId').value = '';
+  document.getElementById('fTitle').value = '';
+  document.getElementById('fDescription').value = '';
+  document.getElementById('fLink').value = '';
+  document.getElementById('fImage').value = '';
+  selectedIcon = 'form';
+  CATEGORY_KEYS.forEach(k => SELECTED[k].clear());
+  renderIconGrid();
+  renderTagEditors();
+  document.getElementById('saveStatus').textContent = '';
 }
 
-.filter-bar .filter-label {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-soft);
-  margin-right: 4px;
+// ---------- Save / Delete ----------
+
+async function saveResource() {
+  const statusEl = document.getElementById('saveStatus');
+  statusEl.className = 'status-msg';
+  statusEl.textContent = 'Saving...';
+
+  const title = document.getElementById('fTitle').value.trim();
+  const link = document.getElementById('fLink').value.trim();
+  if (!title || !link) {
+    statusEl.className = 'status-msg error';
+    statusEl.textContent = 'Title and link are required.';
+    return;
+  }
+
+  const editingId = document.getElementById('editingId').value;
+  const password = document.getElementById('fPasswordConfirm').value || adminPasswordCache;
+
+  const resource = {
+    id: editingId || 'r' + Date.now().toString(36),
+    title,
+    description: document.getElementById('fDescription').value.trim(),
+    link,
+    icon: selectedIcon,
+    image: document.getElementById('fImage').value.trim() || undefined,
+    location: Array.from(SELECTED.location),
+    projectArea: Array.from(SELECTED.projectArea),
+    impactFramework: Array.from(SELECTED.impactFramework),
+    year: Array.from(SELECTED.year),
+  };
+
+  try {
+    const res = await fetch('/.netlify/functions/manage-resource', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: editingId ? 'update' : 'add',
+        password,
+        resource,
+      }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      statusEl.className = 'status-msg success';
+      statusEl.textContent = 'Saved. It will appear on the portal shortly.';
+      resetForm();
+      setTimeout(loadResources, 1500);
+    } else {
+      statusEl.className = 'status-msg error';
+      statusEl.textContent = data.error || 'Could not save. Check the admin password and try again.';
+    }
+  } catch (e) {
+    statusEl.className = 'status-msg error';
+    statusEl.textContent = 'Network error — please try again.';
+  }
 }
 
-.dropdown {
-  position: relative;
-}
-
-.dropdown-btn {
-  font-family: var(--font-body);
-  font-weight: 500;
-  font-size: 13.5px;
-  background: white;
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  padding: 8px 14px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--ink);
-}
-
-.dropdown-btn.active {
-  border-color: var(--teal-bright);
-  color: var(--teal-deep);
-}
-
-.dropdown-btn .count {
-  background: var(--coral);
-  color: white;
-  font-size: 11px;
-  font-family: var(--font-mono);
-  border-radius: 10px;
-  padding: 1px 6px;
-}
-
-.dropdown-panel {
-  display: none;
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  background: white;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(11, 79, 82, 0.12);
-  padding: 10px;
-  min-width: 200px;
-  max-height: 260px;
-  overflow-y: auto;
-  z-index: 30;
-}
-
-.dropdown-panel.open { display: block; }
-
-.dropdown-panel label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13.5px;
-  padding: 6px 4px;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.dropdown-panel label:hover { background: var(--sand); }
-
-.dropdown-panel input[type="checkbox"] {
-  accent-color: var(--teal-bright);
-}
-
-.clear-filters {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--coral-dark);
-  background: none;
-  border: none;
-  cursor: pointer;
-  text-decoration: underline;
-  margin-left: auto;
-}
-
-/* ---------- Tile grid ---------- */
-
-.tile-section {
-  padding: 24px 28px 60px;
-}
-
-.tile-section h2 {
-  font-family: var(--font-display);
-  font-size: 15px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-soft);
-  margin: 0 0 16px;
-}
-
-.tile-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 18px;
-}
-
-.tile {
-  background: var(--sand-card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  text-decoration: none;
-  color: var(--ink);
-  position: relative;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
-}
-
-.tile:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 24px rgba(11, 79, 82, 0.14);
-  border-color: var(--teal-bright);
-}
-
-.tile-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 10px;
-  background: var(--teal);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-}
-
-.tile-icon img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
-.tile-icon svg { width: 22px; height: 22px; }
-
-.tile h3 {
-  font-family: var(--font-display);
-  font-size: 16px;
-  margin: 0;
-  font-weight: 600;
-}
-
-.tile p.desc {
-  font-size: 13.5px;
-  color: var(--ink-soft);
-  margin: 0;
-  line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.tile-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: auto;
-  padding-top: 6px;
-}
-
-.stamp-tag {
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  letter-spacing: 0.02em;
-  border: 1px dashed var(--teal);
-  color: var(--teal-deep);
-  border-radius: 5px;
-  padding: 3px 7px;
-  text-transform: uppercase;
-}
-
-.stamp-tag.year { border-color: var(--coral); color: var(--coral-dark); }
-
-.empty-state {
-  text-align: center;
-  padding: 60px 20px;
-  color: var(--ink-soft);
-}
-
-.empty-state h3 {
-  font-family: var(--font-display);
-  color: var(--ink);
-}
-
-/* ---------- Viewer gate ---------- */
-
-.gate-overlay {
-  position: fixed;
-  inset: 0;
-  background: var(--teal-deep);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-}
-
-.gate-box {
-  background: white;
-  border-radius: var(--radius);
-  padding: 34px;
-  width: 100%;
-  max-width: 340px;
-  text-align: center;
-}
-
-.gate-box .brand-mark { margin: 0 auto 14px; }
-
-.gate-box h2 {
-  font-family: var(--font-display);
-  font-size: 18px;
-  margin: 0 0 6px;
-}
-
-.gate-box p {
-  font-size: 13.5px;
-  color: var(--ink-soft);
-  margin: 0 0 18px;
-}
-
-.gate-box input {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  font-size: 14px;
-  margin-bottom: 10px;
-  font-family: var(--font-body);
-}
-
-.gate-box button, .btn-primary {
-  width: 100%;
-  padding: 11px;
-  border: none;
-  border-radius: 8px;
-  background: var(--coral);
-  color: white;
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-
-.gate-box button:hover, .btn-primary:hover { background: var(--coral-dark); }
-
-.gate-error {
-  color: var(--coral-dark);
-  font-size: 12.5px;
-  margin-top: 4px;
-  min-height: 16px;
-}
-
-.hidden { display: none !important; }
-
-@media (max-width: 640px) {
-  .site-header, .filter-bar, .tile-section { padding-left: 16px; padding-right: 16px; }
+async function deleteResource(id) {
+  if (!confirm('Delete this resource? This cannot be undone.')) return;
+  const password = adminPasswordCache;
+  try {
+    const res = await fetch('/.netlify/functions/manage-resource', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'delete', password, resource: { id } }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      loadResources();
+    } else {
+      alert(data.error || 'Could not delete resource.');
+    }
+  } catch (e) {
+    alert('Network error — please try again.');
+  }
 }
