@@ -41,6 +41,13 @@
   .existing-row button { border: none; background: none; cursor: pointer; font-family: var(--font-mono); font-size: 12px; }
   .existing-row .edit-btn { color: var(--teal-deep); }
   .existing-row .delete-btn { color: var(--coral-dark); }
+  .admin-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+  .admin-tab {
+    font-family: var(--font-body); font-weight: 700; font-size: 13px; text-transform: uppercase;
+    letter-spacing: 0.03em; padding: 10px 18px; border-radius: 4px; border: 2px solid var(--ink);
+    background: white; color: var(--ink); cursor: pointer;
+  }
+  .admin-tab.active { background: var(--ink); color: white; }
 </style>
 </head>
 <body>
@@ -70,6 +77,13 @@
 </header>
 
 <div class="admin-wrap hidden" id="adminContent">
+
+  <div class="admin-tabs">
+    <button class="admin-tab active" id="tabBtnResources" onclick="switchAdminTab('resources')">Resources</button>
+    <button class="admin-tab" id="tabBtnResults" onclick="switchAdminTab('results')">Results</button>
+  </div>
+
+  <div id="panelResources">
 
   <div class="card">
     <h2 id="formTitle">Add a resource</h2>
@@ -138,9 +152,77 @@
     <div class="existing-list" id="existingList"></div>
   </div>
 
+  </div>
+
+  <div id="panelResults" class="hidden">
+
+  <div class="card">
+    <h2 id="resultFormTitle">Add a result</h2>
+    <p class="hint">Paste a Google Sheets link with sharing set to "Anyone with the link can view" — the portal will show a live embedded preview plus a link to open the full sheet.</p>
+
+    <form id="resultForm" onsubmit="return false;">
+      <input type="hidden" id="rEditingId" value="">
+
+      <label class="field">Title</label>
+      <input type="text" id="rTitle" placeholder="e.g. Baseline Survey — Live Results" required>
+
+      <label class="field">Short description (1–2 lines)</label>
+      <textarea id="rDescription" maxlength="160" placeholder="What this shows and where the data comes from"></textarea>
+
+      <label class="field">Google Sheet link</label>
+      <input type="url" id="rSheetUrl" placeholder="https://docs.google.com/spreadsheets/d/..." required>
+
+      <label class="field">Location</label>
+      <div class="tag-editor" id="rTagLocation"></div>
+      <div class="add-value-row">
+        <input type="text" id="rNewLocation" placeholder="Add new location">
+        <button type="button" onclick="addNewValueR('location', 'rNewLocation')">Add</button>
+      </div>
+
+      <label class="field">Project / SDG</label>
+      <div class="tag-editor" id="rTagProjectArea"></div>
+      <div class="add-value-row">
+        <input type="text" id="rNewProjectArea" placeholder="Add new project/SDG area">
+        <button type="button" onclick="addNewValueR('projectArea', 'rNewProjectArea')">Add</button>
+      </div>
+
+      <label class="field">Impact Area Framework</label>
+      <div class="tag-editor" id="rTagImpactFramework"></div>
+      <div class="add-value-row">
+        <input type="text" id="rNewImpactFramework" placeholder="Add new impact area">
+        <button type="button" onclick="addNewValueR('impactFramework', 'rNewImpactFramework')">Add</button>
+      </div>
+
+      <label class="field">Year</label>
+      <div class="tag-editor" id="rTagYear"></div>
+      <div class="add-value-row">
+        <input type="text" id="rNewYear" placeholder="e.g. 2027">
+        <button type="button" onclick="addNewValueR('year', 'rNewYear')">Add</button>
+      </div>
+
+      <label class="field">Admin password (confirm to save)</label>
+      <input type="text" id="rPasswordConfirm" placeholder="Re-enter admin password">
+
+      <div style="margin-top:20px; display:flex; gap:10px;">
+        <button class="btn-primary" style="width:auto; padding:11px 22px;" onclick="saveResult()">Save result</button>
+        <button type="button" onclick="resetResultForm()" style="width:auto; padding:11px 22px; border-radius:8px; border:1px solid var(--line); background:white; cursor:pointer; font-family:var(--font-display); font-weight:600;">Clear form</button>
+      </div>
+      <div class="status-msg" id="rSaveStatus"></div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Existing results</h2>
+    <p class="hint">Click edit to load a result into the form above, or delete to remove it.</p>
+    <div class="existing-list" id="existingResultsList"></div>
+  </div>
+
+  </div>
+
 </div>
 
 <script src="js/icons.js"></script>
 <script src="js/admin.js"></script>
+<script src="js/admin-results.js"></script>
 </body>
 </html>
