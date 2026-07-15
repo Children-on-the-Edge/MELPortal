@@ -55,6 +55,7 @@ async function init() {
   ALL_RESOURCES = await res.json();
   buildFilterBar();
   renderTiles();
+  if (typeof initResults === 'function') initResults();
 }
 
 function buildFilterBar() {
