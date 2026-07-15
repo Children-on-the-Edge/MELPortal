@@ -24,12 +24,22 @@ async function submitAdminPassword() {
       document.getElementById('adminGate').classList.add('hidden');
       document.getElementById('adminContent').classList.remove('hidden');
       loadResources();
+      if (typeof loadResults === 'function') loadResults();
     } else {
       errorEl.textContent = 'Incorrect password. Please try again.';
     }
   } catch (e) {
     errorEl.textContent = 'Could not verify password right now. Please try again shortly.';
   }
+}
+
+// ---------- Tabs ----------
+
+function switchAdminTab(tab) {
+  document.getElementById('panelResources').classList.toggle('hidden', tab !== 'resources');
+  document.getElementById('panelResults').classList.toggle('hidden', tab !== 'results');
+  document.getElementById('tabBtnResources').classList.toggle('active', tab === 'resources');
+  document.getElementById('tabBtnResults').classList.toggle('active', tab === 'results');
 }
 
 // ---------- Load + render existing resources ----------
