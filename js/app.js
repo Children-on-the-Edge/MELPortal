@@ -1,77 +1,47 @@
-const FILTER_FIELDS = [
+const RESULT_FILTER_FIELDS = [
   { key: 'location', label: 'Location' },
   { key: 'projectArea', label: 'Project' },
   { key: 'impactFramework', label: 'Impact Area Framework' },
   { key: 'year', label: 'Year' },
 ];
 
-let ALL_RESOURCES = [];
-let ACTIVE_FILTERS = { location: new Set(), projectArea: new Set(), impactFramework: new Set(), year: new Set() };
+let ALL_RESULTS = [];
+let ACTIVE_RESULT_FILTERS = { location: new Set(), projectArea: new Set(), impactFramework: new Set(), year: new Set() };
 
-// ---------- Viewer gate ----------
+// Converts a normal Google Sheets share link into an embeddable preview URL.
+// Returns null if the link doesn't look like a Google Sheets URL (falls back to no-preview state).
+function sheetEmbedUrl(link) {
+  if (!link) return null;
+  const match = link.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+  if (!match) return null;
+  return `https://docs.google.com/spreadsheets/d/${match[1]}/preview?widget=true&headers=false`;
+}
 
-async function checkViewerGate() {
+async function initResults() {
   try {
-    const res = await fetch('/api/site-config');
-    const cfg = await res.json();
-    if (cfg.viewerGateEnabled && sessionStorage.getItem('cote_viewer_ok') !== '1') {
-      document.getElementById('viewerGate').classList.remove('hidden');
-    } else {
-      init();
-    }
+    const res = await fetch('data/results.json');
+    ALL_RESULTS = await res.json();
   } catch (e) {
-    // If the function isn't reachable (e.g. local file preview), skip the gate.
-    init();
+    ALL_RESULTS = [];
   }
+  buildResultsFilterBar();
+  renderResultTiles();
 }
 
-async function submitViewerPassword() {
-  const password = document.getElementById('viewerPassword').value;
-  const errorEl = document.getElementById('viewerError');
-  errorEl.textContent = '';
-  try {
-    const res = await fetch('/api/verify-password', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ role: 'viewer', password }),
-    });
-    const data = await res.json();
-    if (data.ok) {
-      sessionStorage.setItem('cote_viewer_ok', '1');
-      document.getElementById('viewerGate').classList.add('hidden');
-      init();
-    } else {
-      errorEl.textContent = 'Incorrect password. Please try again.';
-    }
-  } catch (e) {
-    errorEl.textContent = 'Could not verify password. Please try again shortly.';
-  }
-}
-
-// ---------- Data + rendering ----------
-
-async function init() {
-  const res = await fetch('data/resources.json');
-  ALL_RESOURCES = await res.json();
-  buildFilterBar();
-  renderTiles();
-  if (typeof initResults === 'function') initResults();
-}
-
-function buildFilterBar() {
-  const bar = document.getElementById('filterBar');
-  FILTER_FIELDS.forEach(field => {
-    const values = Array.from(new Set(ALL_RESOURCES.flatMap(r => r[field.key] || []))).sort();
+function buildResultsFilterBar() {
+  const bar = document.getElementById('resultsFilterBar');
+  RESULT_FILTER_FIELDS.forEach(field => {
+    const values = Array.from(new Set(ALL_RESULTS.flatMap(r => r[field.key] || []))).sort();
     const wrap = document.createElement('div');
     wrap.className = 'dropdown';
     wrap.innerHTML = `
-      <button class="dropdown-btn" id="btn-${field.key}" onclick="toggleDropdown('${field.key}')">
-        ${field.label} <span class="count hidden" id="count-${field.key}"></span>
+      <button class="dropdown-btn" id="rbtn-${field.key}" onclick="toggleResultsDropdown('${field.key}')">
+        ${field.label} <span class="count hidden" id="rcount-${field.key}"></span>
       </button>
-      <div class="dropdown-panel" id="panel-${field.key}">
+      <div class="dropdown-panel" id="rpanel-${field.key}">
         ${values.map(v => `
           <label>
-            <input type="checkbox" value="${v}" onchange="toggleFilter('${field.key}', '${v}', this.checked)">
+            <input type="checkbox" value="${v}" onchange="toggleResultsFilter('${field.key}', '${v}', this.checked)">
             ${v}
           </label>
         `).join('') || '<p style="font-size:13px;color:#4c6264;padding:6px 4px;">No options yet</p>'}
@@ -82,7 +52,7 @@ function buildFilterBar() {
   const clearBtn = document.createElement('button');
   clearBtn.className = 'clear-filters';
   clearBtn.textContent = 'Clear all filters';
-  clearBtn.onclick = clearAllFilters;
+  clearBtn.onclick = clearAllResultsFilters;
   bar.appendChild(clearBtn);
 
   document.addEventListener('click', (e) => {
@@ -92,20 +62,20 @@ function buildFilterBar() {
   });
 }
 
-function toggleDropdown(key) {
-  const panel = document.getElementById(`panel-${key}`);
+function toggleResultsDropdown(key) {
+  const panel = document.getElementById(`rpanel-${key}`);
   const isOpen = panel.classList.contains('open');
   document.querySelectorAll('.dropdown-panel.open').forEach(p => p.classList.remove('open'));
   if (!isOpen) panel.classList.add('open');
 }
 
-function toggleFilter(key, value, checked) {
-  if (checked) ACTIVE_FILTERS[key].add(value);
-  else ACTIVE_FILTERS[key].delete(value);
+function toggleResultsFilter(key, value, checked) {
+  if (checked) ACTIVE_RESULT_FILTERS[key].add(value);
+  else ACTIVE_RESULT_FILTERS[key].delete(value);
 
-  const btn = document.getElementById(`btn-${key}`);
-  const countEl = document.getElementById(`count-${key}`);
-  const n = ACTIVE_FILTERS[key].size;
+  const btn = document.getElementById(`rbtn-${key}`);
+  const countEl = document.getElementById(`rcount-${key}`);
+  const n = ACTIVE_RESULT_FILTERS[key].size;
   if (n > 0) {
     btn.classList.add('active');
     countEl.textContent = n;
@@ -114,33 +84,33 @@ function toggleFilter(key, value, checked) {
     btn.classList.remove('active');
     countEl.classList.add('hidden');
   }
-  renderTiles();
+  renderResultTiles();
 }
 
-function clearAllFilters() {
-  FILTER_FIELDS.forEach(f => ACTIVE_FILTERS[f.key].clear());
-  document.querySelectorAll('.dropdown-panel input[type="checkbox"]').forEach(cb => cb.checked = false);
-  document.querySelectorAll('.dropdown-btn').forEach(btn => btn.classList.remove('active'));
-  document.querySelectorAll('.count').forEach(c => c.classList.add('hidden'));
-  renderTiles();
+function clearAllResultsFilters() {
+  RESULT_FILTER_FIELDS.forEach(f => ACTIVE_RESULT_FILTERS[f.key].clear());
+  document.querySelectorAll('#resultsFilterBar .dropdown-panel input[type="checkbox"]').forEach(cb => cb.checked = false);
+  document.querySelectorAll('#resultsFilterBar .dropdown-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('#resultsFilterBar .count').forEach(c => c.classList.add('hidden'));
+  renderResultTiles();
 }
 
-function matchesFilters(resource) {
-  return FILTER_FIELDS.every(f => {
-    const active = ACTIVE_FILTERS[f.key];
+function matchesResultFilters(result) {
+  return RESULT_FILTER_FIELDS.every(f => {
+    const active = ACTIVE_RESULT_FILTERS[f.key];
     if (active.size === 0) return true;
-    const values = resource[f.key] || [];
+    const values = result[f.key] || [];
     return values.some(v => active.has(v));
   });
 }
 
-function renderTiles() {
-  const grid = document.getElementById('tileGrid');
-  const empty = document.getElementById('emptyState');
-  const filtered = ALL_RESOURCES.filter(matchesFilters);
+function renderResultTiles() {
+  const grid = document.getElementById('resultsGrid');
+  const empty = document.getElementById('resultsEmptyState');
+  const filtered = ALL_RESULTS.filter(matchesResultFilters);
 
-  document.getElementById('resultsCount').textContent =
-    filtered.length === ALL_RESOURCES.length ? 'All resources' : `${filtered.length} of ${ALL_RESOURCES.length} resources`;
+  document.getElementById('resultsSectionCount').textContent =
+    filtered.length === ALL_RESULTS.length ? 'Results' : `Results — ${filtered.length} of ${ALL_RESULTS.length}`;
 
   grid.innerHTML = '';
   if (filtered.length === 0) {
@@ -150,11 +120,8 @@ function renderTiles() {
   empty.classList.add('hidden');
 
   filtered.forEach(r => {
-    const a = document.createElement('a');
-    a.className = 'tile';
-    a.href = r.link;
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
+    const card = document.createElement('div');
+    card.className = 'result-card';
 
     const tags = [
       ...(r.location || []).map(v => `<span class="stamp-tag">${v}</span>`),
@@ -163,18 +130,18 @@ function renderTiles() {
       ...(r.year || []).map(v => `<span class="stamp-tag year">${v}</span>`),
     ].join('');
 
-    const iconHTML = r.image
-      ? `<img src="${r.image}" alt="">`
-      : iconSVG(r.icon);
+    const embedSrc = sheetEmbedUrl(r.sheetUrl);
+    const embedHTML = embedSrc
+      ? `<iframe src="${embedSrc}" loading="lazy" title="${r.title} preview"></iframe>`
+      : `<div class="no-preview">No live preview available for this link — use "Open full sheet" below.</div>`;
 
-    a.innerHTML = `
-      <div class="tile-icon">${iconHTML}</div>
+    card.innerHTML = `
       <h3>${r.title}</h3>
       <p class="desc">${r.description || ''}</p>
+      <div class="result-embed">${embedHTML}</div>
       <div class="tile-tags">${tags}</div>
+      <a class="result-open-link" href="${r.sheetUrl}" target="_blank" rel="noopener noreferrer">Open full sheet ↗</a>
     `;
-    grid.appendChild(a);
+    grid.appendChild(card);
   });
 }
-
-checkViewerGate();
