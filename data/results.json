@@ -20,18 +20,16 @@
   },
   {
     "id": "resmrnbj4rn",
-    "title": "Live Results - Focus Group Discussions",
-    "description": "",
-    "sheetUrl": "https://docs.google.com/spreadsheets/d/1mqmS7Fi1x1fqR7mJe3lZhQI7NLfV6t0wC9_XaB1Tj7Y/edit?gid=0#gid=0",
+    "title": "Live Results - CMC Focus Group Discussions",
+    "description": "Results from the May 2026 Survey",
+    "sheetUrl": "https://docs.google.com/spreadsheets/d/1mqmS7Fi1x1fqR7mJe3lZhQI7NLfV6t0wC9_XaB1Tj7Y/edit?coid=1760693525&gid=692266183#gid=692266183",
     "location": [
       "Uganda"
     ],
     "projectArea": [
-      "Education"
+      "Community Engagement"
     ],
-    "impactFramework": [
-      "Child Protection"
-    ],
+    "impactFramework": [],
     "year": [
       "2026"
     ]
