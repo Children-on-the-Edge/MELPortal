@@ -1,6 +1,6 @@
 const RESULT_FILTER_FIELDS = [
   { key: 'location', label: 'Location' },
-  { key: 'projectArea', label: 'Project / SDG' },
+  { key: 'projectArea', label: 'Project' },
   { key: 'impactFramework', label: 'Impact Area Framework' },
   { key: 'year', label: 'Year' },
 ];
