@@ -111,7 +111,7 @@ async function saveResult() {
   };
 
   try {
-    const res = await fetch('/.netlify/functions/manage-result', {
+    const res = await fetch('/api/manage-result', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -140,7 +140,7 @@ async function deleteResult(id) {
   if (!confirm('Delete this result? This cannot be undone.')) return;
   const password = adminPasswordCache;
   try {
-    const res = await fetch('/.netlify/functions/manage-result', {
+    const res = await fetch('/api/manage-result', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'delete', password, result: { id } }),
