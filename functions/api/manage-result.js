@@ -1,41 +1,54 @@
-exports.handler = async function (event) {
-  const headers = { 'Content-Type': 'application/json' };
+function json(obj, status = 200) {
+  return new Response(JSON.stringify(obj), { status, headers: { 'Content-Type': 'application/json' } });
+}
 
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, headers, body: JSON.stringify({ ok: false, error: 'Method not allowed' }) };
-  }
+function base64Encode(str) {
+  const bytes = new TextEncoder().encode(str);
+  let binary = '';
+  bytes.forEach(b => (binary += String.fromCharCode(b)));
+  return btoa(binary);
+}
+function base64Decode(b64) {
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+
+export async function onRequestPost(context) {
+  const { request, env } = context;
 
   let payload;
   try {
-    payload = JSON.parse(event.body || '{}');
+    payload = await request.json();
   } catch (e) {
-    return { statusCode: 400, headers, body: JSON.stringify({ ok: false, error: 'Bad request body' }) };
+    return json({ ok: false, error: 'Bad request body' }, 400);
   }
 
   const { action, password, result } = payload;
 
-  const adminPassword = process.env.ADMIN_PASSWORD;
+  const adminPassword = env.ADMIN_PASSWORD;
   if (!adminPassword) {
-    return { statusCode: 500, headers, body: JSON.stringify({ ok: false, error: 'ADMIN_PASSWORD is not configured on the server.' }) };
+    return json({ ok: false, error: 'ADMIN_PASSWORD is not configured on the server.' }, 500);
   }
   if (password !== adminPassword) {
-    return { statusCode: 401, headers, body: JSON.stringify({ ok: false, error: 'Incorrect admin password.' }) };
+    return json({ ok: false, error: 'Incorrect admin password.' }, 401);
   }
 
   if (!['add', 'update', 'delete'].includes(action)) {
-    return { statusCode: 400, headers, body: JSON.stringify({ ok: false, error: 'Unknown action.' }) };
+    return json({ ok: false, error: 'Unknown action.' }, 400);
   }
   if (!result || !result.id) {
-    return { statusCode: 400, headers, body: JSON.stringify({ ok: false, error: 'Result id is required.' }) };
+    return json({ ok: false, error: 'Result id is required.' }, 400);
   }
 
-  const token = process.env.GITHUB_TOKEN;
-  const repo = process.env.GITHUB_REPO;
-  const branch = process.env.GITHUB_BRANCH || 'main';
-  const filePath = process.env.RESULTS_DATA_PATH || 'data/results.json';
+  const token = env.GITHUB_TOKEN;
+  const repo = env.GITHUB_REPO;
+  const branch = env.GITHUB_BRANCH || 'main';
+  const filePath = env.RESULTS_DATA_PATH || 'data/results.json';
 
   if (!token || !repo) {
-    return { statusCode: 500, headers, body: JSON.stringify({ ok: false, error: 'GITHUB_TOKEN or GITHUB_REPO is not configured on the server.' }) };
+    return json({ ok: false, error: 'GITHUB_TOKEN or GITHUB_REPO is not configured on the server.' }, 500);
   }
 
   const apiUrl = `https://api.github.com/repos/${repo}/contents/${filePath}`;
@@ -49,10 +62,10 @@ exports.handler = async function (event) {
     const getRes = await fetch(`${apiUrl}?ref=${branch}`, { headers: ghHeaders });
     if (!getRes.ok) {
       const errText = await getRes.text();
-      return { statusCode: 502, headers, body: JSON.stringify({ ok: false, error: `Could not read results.json from GitHub: ${errText}` }) };
+      return json({ ok: false, error: `Could not read results.json from GitHub: ${errText}` }, 502);
     }
     const fileData = await getRes.json();
-    const currentContent = Buffer.from(fileData.content, 'base64').toString('utf-8');
+    const currentContent = base64Decode(fileData.content);
     let results = JSON.parse(currentContent);
 
     if (action === 'add') {
@@ -63,7 +76,7 @@ exports.handler = async function (event) {
       results = results.filter(r => r.id !== result.id);
     }
 
-    const newContent = Buffer.from(JSON.stringify(results, null, 2)).toString('base64');
+    const newContent = base64Encode(JSON.stringify(results, null, 2));
     const commitMessages = {
       add: `Add result: ${result.title || result.id}`,
       update: `Update result: ${result.title || result.id}`,
@@ -83,11 +96,11 @@ exports.handler = async function (event) {
 
     if (!putRes.ok) {
       const errText = await putRes.text();
-      return { statusCode: 502, headers, body: JSON.stringify({ ok: false, error: `Could not commit change to GitHub: ${errText}` }) };
+      return json({ ok: false, error: `Could not commit change to GitHub: ${errText}` }, 502);
     }
 
-    return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
+    return json({ ok: true });
   } catch (e) {
-    return { statusCode: 500, headers, body: JSON.stringify({ ok: false, error: e.message }) };
+    return json({ ok: false, error: e.message }, 500);
   }
-};
+}
