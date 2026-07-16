@@ -4,7 +4,7 @@ A simple, branded portal where external partners can find the forms, links, and
 tools they need for monitoring and evaluation. Resources are shown as a
 scrollable, filterable tile grid (by Location, Project/SDG, Impact Area
 Framework, and Year). Your MEL team can add, edit, or remove resources through
-a password-protected admin page — no code required day-to-day.
+a password-protected admin page, no code required day-to-day.
 
 ## How it works (in plain terms)
 
