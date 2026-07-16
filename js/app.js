@@ -12,7 +12,7 @@ let ACTIVE_FILTERS = { location: new Set(), projectArea: new Set(), impactFramew
 
 async function checkViewerGate() {
   try {
-    const res = await fetch('/.netlify/functions/site-config');
+    const res = await fetch('/api/site-config');
     const cfg = await res.json();
     if (cfg.viewerGateEnabled && sessionStorage.getItem('cote_viewer_ok') !== '1') {
       document.getElementById('viewerGate').classList.remove('hidden');
@@ -30,7 +30,7 @@ async function submitViewerPassword() {
   const errorEl = document.getElementById('viewerError');
   errorEl.textContent = '';
   try {
-    const res = await fetch('/.netlify/functions/verify-password', {
+    const res = await fetch('/api/verify-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ role: 'viewer', password }),
