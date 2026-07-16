@@ -1,24 +1,5 @@
 [
   {
-    "id": "res001",
-    "title": "Baseline Survey — Live Results",
-    "description": "Auto-updating summary of baseline survey responses collected via Kobo Toolbox.",
-    "sheetUrl": "https://docs.google.com/spreadsheets/d/1EXAMPLE_SHEET_ID_REPLACE_ME/edit#gid=0",
-    "location": [
-      "Uganda",
-      "Bangladesh"
-    ],
-    "projectArea": [
-      "Education"
-    ],
-    "impactFramework": [
-      "Child Protection"
-    ],
-    "year": [
-      "2026"
-    ]
-  },
-  {
     "id": "resmrnbj4rn",
     "title": "Live Results - CMC Focus Group Discussions",
     "description": "Results from the May 2026 Survey",
