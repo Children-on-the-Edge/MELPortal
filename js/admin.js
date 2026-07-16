@@ -12,7 +12,7 @@ async function submitAdminPassword() {
   const errorEl = document.getElementById('adminError');
   errorEl.textContent = '';
   try {
-    const res = await fetch('/.netlify/functions/verify-password', {
+    const res = await fetch('/api/verify-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ role: 'admin', password }),
@@ -182,7 +182,7 @@ async function saveResource() {
   };
 
   try {
-    const res = await fetch('/.netlify/functions/manage-resource', {
+    const res = await fetch('/api/manage-resource', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -211,7 +211,7 @@ async function deleteResource(id) {
   if (!confirm('Delete this resource? This cannot be undone.')) return;
   const password = adminPasswordCache;
   try {
-    const res = await fetch('/.netlify/functions/manage-resource', {
+    const res = await fetch('/api/manage-resource', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'delete', password, resource: { id } }),
