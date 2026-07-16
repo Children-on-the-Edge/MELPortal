@@ -1,55 +1,41 @@
-function json(obj, status = 200) {
-  return new Response(JSON.stringify(obj), { status, headers: { 'Content-Type': 'application/json' } });
-}
+exports.handler = async function (event) {
+  const headers = { 'Content-Type': 'application/json' };
 
-// UTF-8 safe base64 helpers (Buffer isn't available in the Workers runtime)
-function base64Encode(str) {
-  const bytes = new TextEncoder().encode(str);
-  let binary = '';
-  bytes.forEach(b => (binary += String.fromCharCode(b)));
-  return btoa(binary);
-}
-function base64Decode(b64) {
-  const binary = atob(b64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return new TextDecoder().decode(bytes);
-}
-
-export async function onRequestPost(context) {
-  const { request, env } = context;
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, headers, body: JSON.stringify({ ok: false, error: 'Method not allowed' }) };
+  }
 
   let payload;
   try {
-    payload = await request.json();
+    payload = JSON.parse(event.body || '{}');
   } catch (e) {
-    return json({ ok: false, error: 'Bad request body' }, 400);
+    return { statusCode: 400, headers, body: JSON.stringify({ ok: false, error: 'Bad request body' }) };
   }
 
-  const { action, password, resource } = payload;
+  const { action, password, result } = payload;
 
-  const adminPassword = env.ADMIN_PASSWORD;
+  const adminPassword = process.env.ADMIN_PASSWORD;
   if (!adminPassword) {
-    return json({ ok: false, error: 'ADMIN_PASSWORD is not configured on the server.' }, 500);
+    return { statusCode: 500, headers, body: JSON.stringify({ ok: false, error: 'ADMIN_PASSWORD is not configured on the server.' }) };
   }
   if (password !== adminPassword) {
-    return json({ ok: false, error: 'Incorrect admin password.' }, 401);
+    return { statusCode: 401, headers, body: JSON.stringify({ ok: false, error: 'Incorrect admin password.' }) };
   }
 
   if (!['add', 'update', 'delete'].includes(action)) {
-    return json({ ok: false, error: 'Unknown action.' }, 400);
+    return { statusCode: 400, headers, body: JSON.stringify({ ok: false, error: 'Unknown action.' }) };
   }
-  if (!resource || !resource.id) {
-    return json({ ok: false, error: 'Resource id is required.' }, 400);
+  if (!result || !result.id) {
+    return { statusCode: 400, headers, body: JSON.stringify({ ok: false, error: 'Result id is required.' }) };
   }
 
-  const token = env.GITHUB_TOKEN;
-  const repo = env.GITHUB_REPO;
-  const branch = env.GITHUB_BRANCH || 'main';
-  const filePath = env.DATA_PATH || 'data/resources.json';
+  const token = process.env.GITHUB_TOKEN;
+  const repo = process.env.GITHUB_REPO;
+  const branch = process.env.GITHUB_BRANCH || 'main';
+  const filePath = process.env.RESULTS_DATA_PATH || 'data/results.json';
 
   if (!token || !repo) {
-    return json({ ok: false, error: 'GITHUB_TOKEN or GITHUB_REPO is not configured on the server.' }, 500);
+    return { statusCode: 500, headers, body: JSON.stringify({ ok: false, error: 'GITHUB_TOKEN or GITHUB_REPO is not configured on the server.' }) };
   }
 
   const apiUrl = `https://api.github.com/repos/${repo}/contents/${filePath}`;
@@ -63,25 +49,25 @@ export async function onRequestPost(context) {
     const getRes = await fetch(`${apiUrl}?ref=${branch}`, { headers: ghHeaders });
     if (!getRes.ok) {
       const errText = await getRes.text();
-      return json({ ok: false, error: `Could not read resources.json from GitHub: ${errText}` }, 502);
+      return { statusCode: 502, headers, body: JSON.stringify({ ok: false, error: `Could not read results.json from GitHub: ${errText}` }) };
     }
     const fileData = await getRes.json();
-    const currentContent = base64Decode(fileData.content);
-    let resources = JSON.parse(currentContent);
+    const currentContent = Buffer.from(fileData.content, 'base64').toString('utf-8');
+    let results = JSON.parse(currentContent);
 
     if (action === 'add') {
-      resources.push(resource);
+      results.push(result);
     } else if (action === 'update') {
-      resources = resources.map(r => (r.id === resource.id ? { ...r, ...resource } : r));
+      results = results.map(r => (r.id === result.id ? { ...r, ...result } : r));
     } else if (action === 'delete') {
-      resources = resources.filter(r => r.id !== resource.id);
+      results = results.filter(r => r.id !== result.id);
     }
 
-    const newContent = base64Encode(JSON.stringify(resources, null, 2));
+    const newContent = Buffer.from(JSON.stringify(results, null, 2)).toString('base64');
     const commitMessages = {
-      add: `Add resource: ${resource.title || resource.id}`,
-      update: `Update resource: ${resource.title || resource.id}`,
-      delete: `Delete resource: ${resource.id}`,
+      add: `Add result: ${result.title || result.id}`,
+      update: `Update result: ${result.title || result.id}`,
+      delete: `Delete result: ${result.id}`,
     };
 
     const putRes = await fetch(apiUrl, {
@@ -97,11 +83,11 @@ export async function onRequestPost(context) {
 
     if (!putRes.ok) {
       const errText = await putRes.text();
-      return json({ ok: false, error: `Could not commit change to GitHub: ${errText}` }, 502);
+      return { statusCode: 502, headers, body: JSON.stringify({ ok: false, error: `Could not commit change to GitHub: ${errText}` }) };
     }
 
-    return json({ ok: true });
+    return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
   } catch (e) {
-    return json({ ok: false, error: e.message }, 500);
+    return { statusCode: 500, headers, body: JSON.stringify({ ok: false, error: e.message }) };
   }
-}
+};
